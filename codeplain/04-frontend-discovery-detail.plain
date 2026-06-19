@@ -1,0 +1,152 @@
+---
+description: "HairMatch home, quiz, search/discovery, favourites, style detail, product popup, and responsive UI specification."
+requires:
+  - 03-frontend-shell-state
+---
+
+***definitions***
+
+- :HomeScreen: is the first screen at :View: `home`.
+
+- :QuizFlow: is the preference quiz rendered at :View: `quiz`.
+
+- :ResultsScreen: is the searchable discovery feed rendered at :View: `results`.
+
+- :StyleCard: is a clickable card for a :GalleryStyle:.
+
+- :DetailOverlay: is the popup for a single :GalleryStyle:.
+
+- :Product: is a styling product with match terms, product photos, result photo, description, and how-to-use steps.
+
+- :ProductOverlay: is the popup for a :Product:.
+
+- :DiscoveryFilters: are the full-screen preference filter drawer plus inline refine controls.
+
+- :ScoringPipeline: is the deterministic client-side ranking pipeline for :GalleryStyle: results.
+
+- :ResponsiveUi: is the CSS and JavaScript behavior for desktop, tablet, phone, and short laptop viewports.
+
+***implementation reqs***
+
+- :Frontend: should render screens by assigning HTML strings into `#app` and then wiring event listeners.
+
+- :Frontend: should keep text search, preference filtering, refine filtering, and result scoring on the client.
+
+- :Frontend: should use image URLs with `loading="lazy"` and `referrerpolicy="no-referrer"` when rendering remote hairstyle or product images.
+
+- :Frontend: should keep card and overlay controls accessible with real buttons, labels, `aria-pressed`, `aria-expanded`, and Escape/backdrop closing behavior.
+
+- :Frontend: should use the CSS token palette from `base.css`: warm off-white background, white surfaces, tan secondary surfaces, near-black ink, muted text, gold accent, and 8px default radius.
+
+- :ResponsiveUi: should use breakpoints at `820px`, `600px`, `440px`, and a short-laptop block for `min-width: 821px and max-height: 760px`.
+
+***test reqs***
+
+- :ConformanceTests: should inspect frontend source for result computation, filtering helpers, try-on UI hooks, and absence of admin edit controls.
+
+- :ConformanceTests: should inspect CSS source for home wordmark sizing, try-on generation animation, and absence of admin styles.
+
+***functional specs***
+
+- :HomeScreen: should hide the topbar and render the HairMatch brand, animated slogan `Explore your style and express it effortlessly`, a primary `Find my style` action, and a secondary `I have got ideas` action.
+
+- `Find my style` should clear previous quiz answers, reset quiz completion and quiz step, and navigate to :QuizFlow:.
+
+- `I have got ideas` should navigate directly to :ResultsScreen:.
+
+- :QuizFlow: should include a progress bar, question count, percentage progress, question title, optional subcopy, selected count, Back button when not on first step, and a Continue or Skip/Show me results button.
+
+- :QuizFlow: should include a `style` question asking `What gendered styles are you looking for?` with Masculine styles and Feminine styles image options.
+
+- :QuizFlow: should include a `texture` question asking `What hair texture do you like?` with Straight, Wavy, Curly, and Coily options.
+
+- :QuizFlow: should include a `length` question asking `How long are you thinking?` with Very short, Short, Medium, and Long options.
+
+- Length options should expand into separate Men and Women variants when selected style gender is both or not yet chosen.
+
+- When length options are expanded, :QuizFlow: should show a segmented icon toggle for masculine and feminine length examples.
+
+- :QuizFlow: should include a `vibe` question asking `Which looks do you like?` with Classic, Trendy, Edgy, Romantic, Effortless, Professional, Playful, and Sporty options.
+
+- :QuizFlow: should include an `ethnicity` question asking whether the user wants photos featuring a specific ethnicity, with Black / African descent, South East Asian, East Asian, South Asian, Latino / Hispanic, Middle Eastern, White / Caucasian, and No preference options.
+
+- Quiz option selection should support exclusive options and future select-all options.
+
+- Changing the style answer should reconcile already selected length answers so stored values remain valid for the new gender mode.
+
+- On mobile at `max-width: 820px`, non-text quiz option grids should behave as horizontal scroll-snap carousels with dot indicators.
+
+- Text-layout quiz/filter questions should remain stacked instead of carousel-based on mobile.
+
+- :ResultsScreen: should render a search input with placeholder `Search styles...` at rest and `Search by length, texture, vibe, or style name` on focus.
+
+- :ResultsScreen: should render a heading showing `<count> styles to try`.
+
+- :ResultsScreen: should render an onboarding banner when no preferences are selected and feed onboarding has not been dismissed.
+
+- The onboarding banner should include actions to dismiss it or open preferences.
+
+- :DiscoveryFilters: should include an Edit preferences button with a selected-count badge.
+
+- The full preferences drawer should include all discovery questions: style, texture, length, face shape, hair colour, hair thickness, vibe, and ethnicity.
+
+- The face shape filter should support Oval, Round, Square, Heart, Diamond, Rectangle, Triangle, and No preference.
+
+- The hair colour filter should support Black, Brown, Blonde, Red, Grey, Other, and No preference.
+
+- The hair thickness filter should support Especially thin, Thin, Thick, Especially thick, and No preference.
+
+- Inline refine controls should support face shape, hair colour, hair density, and maintenance level.
+
+- Refine controls should open one panel at a time and should close when the user clicks outside the panel.
+
+- `applyTextSearch()` should match the normalized search query against gallery id, name, image URL, description, length, hair type, hair subtype, hair thickness, ethnicity, celebrity, gender, maintenance level, face shape, vibe, hair colour, haircut name, maintenance copy, classification metadata, labels, and features.
+
+- :ScoringPipeline: should first narrow by selected quiz answers when any are selected.
+
+- :ScoringPipeline: should then apply text search.
+
+- :ScoringPipeline: should then apply refine filters.
+
+- :ScoringPipeline: should then rank results by score with a stable seeded shuffle tie-breaker based on the answer set.
+
+- Scoring should add 8 points for matching selected style gender, 5 points for matching selected texture, 5 points for matching selected length, 5 points for matching selected vibe, 5 points for matching selected ethnicity, 4 points for matching selected hair colour, 4 points for matching selected hair thickness, and 4 points for matching selected face shape.
+
+- Vibe scoring should also add 2 points per matching vibe keyword in the style haystack.
+
+- Hard filtering should require selected style gender when at least one non-select-all style answer is selected.
+
+- When no results match, :ResultsScreen: should show `No exact matches yet. Search all styles instead.`
+
+- :StyleCard: should show the style image when available, the style name overlay, and a heart button that saves or removes the style.
+
+- :StyleCard: should open :DetailOverlay: when its image area is clicked.
+
+- Favourite toggling should update local UI optimistically, synchronize saved references into the style brief, call :FavouritesApi:, and roll back on API failure.
+
+- :DetailOverlay: should show the selected style image, `gender - length length` metadata, style name, Try on button, Save style button, maintenance section, product chips, and up to four similar results.
+
+- :DetailOverlay: should compute similar results by matching gender, length, and hair type, preferring styles with at least two matching attributes.
+
+- :DetailOverlay: should include a share icon button that uses `navigator.share` when available and otherwise copies or prompts a URL with `?style=<styleId>`.
+
+- :DetailOverlay: should deep-link open when the page is loaded with `?style=<styleId>`.
+
+- Save style in :DetailOverlay: should mirror the same favourite state as :StyleCard: hearts.
+
+- Maintenance text should link recognized product names into :ProductOverlay: links.
+
+- :Product: metadata should include Curl Cream, Sea Salt Spray, Texture Powder, Matte Paste, Pomade, Styling Gel, Heat Protectant, Hair Oil, Diffuser, Hair Straighteners, and Curling Iron.
+
+- :ProductOverlay: should render product description, product photos, how-to-use steps, and one result image.
+
+- :ProductOverlay: should stack above :DetailOverlay: or the favourites overlay and should restore body scrolling only when no lower overlay remains open.
+
+- :ResponsiveUi: should hide the topbar on home, quiz, and shared-review views.
+
+- :ResponsiveUi: should show the mobile bottom nav at `max-width: 820px` and hide it on desktop.
+
+- :ResponsiveUi: should keep style cards, quiz cards, overlays, brief cards, and buttons within their containers on small screens.
+
+- :ResponsiveUi: should maintain portrait quiz option media with `aspect-ratio: 2 / 3` and should mirror aspect-ratio-sensitive changes in the short-laptop CSS block.
+

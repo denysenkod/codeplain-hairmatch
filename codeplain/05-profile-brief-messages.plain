@@ -1,0 +1,172 @@
+---
+description: "HairMatch profile, style brief, sharing, shared review, stylist feedback, and messages specification."
+requires:
+  - 04-frontend-discovery-detail
+---
+
+***definitions***
+
+- :ProfileScreen: is the :View: `brief` screen where :User: edits their :StyleBrief:.
+
+- :BriefItem: is one item in :StyleBrief: `items`.
+
+- :OwnHairItem: is a :BriefItem: whose `partition` is `me`.
+
+- :ReferenceItem: is a :BriefItem: whose `partition` is `references`.
+
+- :SavedReferenceItem: is a :ReferenceItem: created automatically from a :Favourite:.
+
+- :UploadedReferenceItem: is a :ReferenceItem: created from an uploaded image.
+
+- :TryOnReferenceItem: is a :ReferenceItem: created from a generated try-on result.
+
+- :BriefDetails: is the JSON object with colour/treatment details, budget, time, maintenance preference, and general notes.
+
+- :BriefShareFlow: is the profile completion, copy link, and native share flow.
+
+- :SharedReviewScreen: is the :View: `shared` screen opened from a `?brief=<id>` URL.
+
+- :MessagesScreen: is the :View: `messages` screen where :User: sees :StylistFeedback:.
+
+***implementation reqs***
+
+- :ProfileScreen: should be local-first and should mirror edits to :BriefApi: using a debounced sync.
+
+- :Frontend: should store :StyleBrief: items and :BriefDetails: in localStorage so profile data survives reloads.
+
+- :Frontend: should store completed brief ids in localStorage so old share links can still be surfaced in messages after a new draft starts.
+
+- :Frontend: should compress uploaded images with `createImageBitmap`, canvas, and `canvas.toDataURL("image/webp", 0.84)` with max dimension `1200` when possible.
+
+- :Frontend: should fall back to FileReader data URLs when browser image compression fails.
+
+- :Frontend: should keep self-photo uploads mirrored to :UserPhotoApi: as best-effort background writes.
+
+- :Frontend: should not block visible profile updates when API mirroring fails.
+
+- :Frontend: should use native `navigator.share` on mobile when available and clipboard copy otherwise.
+
+***test reqs***
+
+- :ConformanceTests: should verify that :BriefApi: can create, update, list, read, and store multiple briefs for one session.
+
+- :ConformanceTests: should verify that feedback can be created, edited, deleted, and rejected when empty.
+
+- :ConformanceTests: should verify that missing shared briefs return 404.
+
+***functional specs***
+
+- :ProfileScreen: should render a hero with `Your hair brief` and explanatory copy about gathering current hair photos, reference looks, colour details, and notes.
+
+- :ProfileScreen: should render a `Your hair` section for :OwnHairItem: records.
+
+- :ProfileScreen: should render a `References` section for :ReferenceItem: records.
+
+- :ProfileScreen: should render a `Colour & treatment` section.
+
+- :ProfileScreen: should render a `Budget & maintenance` section.
+
+- :ProfileScreen: should render a sticky or side profile summary card with completeness percent, row links to missing sections, and a `Complete profile` button.
+
+- :BriefItem: should include `id`, `source`, `imageUrl`, `name`, `partition`, `firstChoice`, `annotation`, and optional `styleId`, `referenceStyleId`, or `hairstyleStatus`.
+
+- :OwnHairItem: should always normalize to `partition: "me"` and `hairstyleStatus: "current"`.
+
+- Items without an explicit `partition: "me"` should be treated as references.
+
+- Saving a :Favourite: should automatically add a corresponding :SavedReferenceItem: to :StyleBrief:.
+
+- Removing a saved reference from :StyleBrief: should also remove the matching :Favourite: through :FavouritesApi:.
+
+- :SavedReferenceItem: ids should be `saved-<styleId>`.
+
+- :SavedReferenceItem: should include source `saved`, gallery `styleId`, image URL, style name, partition `references`, `firstChoice: true`, and empty annotation.
+
+- :ProfileScreen: should let :User: upload or capture one or more self photos into the `me` partition.
+
+- :ProfileScreen: should let :User: upload one or more reference photos into the `references` partition.
+
+- :ProfileScreen: should let :User: remove any brief item.
+
+- :ProfileScreen: should let :User: open a gallery style detail from a reference card when that card points to a known gallery style.
+
+- Reference items should be sorted with favourite references before non-favourite references while preserving order within each group.
+
+- :BriefDetails: should default to colour `None`, empty treatment fields, budget max `200`, time at barber `60`, empty maintenance preference, and empty notes.
+
+- The colour dropdown should include `None`, Jet black, Soft black, Darkest brown, Dark brown, Medium brown, Light brown, Chestnut brown, Ash brown, Dark blonde, Medium blonde, Light blonde, Ash blonde, Platinum blonde, Honey blonde, Strawberry blonde, Auburn, Copper / ginger, Bright red, Burgundy, Mahogany, Rose gold, Pastel pink, Hot pink, Lavender, Purple, Blue, Teal, Green, Silver / grey, Highlights, Balayage, Ombre, Bleached / lightened, and Other.
+
+- Selecting `None` for colour should clear allergies, previous treatments, chemical history, and damage fields.
+
+- Known colour options should show a solid hex swatch.
+
+- `None` should show a no-colour icon swatch.
+
+- Unknown typed colour values should show an empty placeholder swatch.
+
+- Treatment detail fields should include allergies or sensitivities, previous colour treatments, other chemical history, and damage or breakage.
+
+- Treatment detail fields should render as addable rows until a value is chosen.
+
+- Each treatment detail row should support a fixed option list plus `Other` with a free text input.
+
+- Budget should be a range from `0` to `200` in steps of `10` and display `GBP0-GBP<amount>` with a plus suffix at 200.
+
+- Time at barber should be a range from `15` to `180` minutes in steps of `15`.
+
+- Maintenance preference should be a Low, Medium, High segmented control and should fall back to the quiz maintenance answer when explicit profile preference is empty.
+
+- General notes should be a multiline text field in the budget and maintenance section.
+
+- Profile completeness should count four sections: own hair photo, references, colour/treatment details, and budget/maintenance details.
+
+- `Complete profile` should highlight missing own hair, references, colour/treatment, or budget/maintenance sections before opening the completion page.
+
+- The completion page should let :User: edit final notes, copy the brief link, or share the brief with the stylist.
+
+- Completing with share should remember the current brief id, start a new draft id, show a `Brief sent!` screen, and navigate back home when dismissed.
+
+- :BriefShareFlow: should create links shaped `/?brief=<briefId>&review=1` for stylist review.
+
+- :BriefShareFlow: should force a brief sync before reporting a link as ready.
+
+- Brief sync should debounce regular edits by about `800ms` when a brief id already exists and about `160ms` before the first id exists.
+
+- Brief sync should queue another sync if a save is already in flight.
+
+- Brief payloads should include `id` when known, `sessionId`, `items`, and a filtered `details` payload.
+
+- :BriefDetails: payload should include colour treatment fields only when the colour section is open and has content.
+
+- :BriefDetails: payload should include notes, budget, time, and maintenance preference when present even if the colour section is closed.
+
+- :SharedReviewScreen: should load `GET /api/briefs/:id` and render a loading state, not-found state, or the loaded brief.
+
+- :SharedReviewScreen: should render a stylist reviewer name input when opened in review mode.
+
+- :SharedReviewScreen: should render read-only `Their hair` and `References` partitions.
+
+- :SharedReviewScreen: should render colour/treatment details only when the owner shared those fields.
+
+- :SharedReviewScreen: should render general notes as a distinct section.
+
+- :SharedReviewScreen: should render a high-level stylist summary form in review mode.
+
+- Submitting a stylist summary should `POST /api/briefs/:id/feedback` with author and note, append returned feedback locally, and re-render.
+
+- :SharedReviewScreen: should let the reviewer edit and delete their existing feedback entries.
+
+- Shared client view from Messages should open with `?brief=<id>&client=1`, should be read-only, and should include a Leave brief button returning to Messages.
+
+- :MessagesScreen: should render `Stylist feedback` with explanatory copy.
+
+- :MessagesScreen: should show an empty state and a `Complete profile` button when no brief has been shared.
+
+- :MessagesScreen: should list feedback sorted newest first when feedback exists.
+
+- Each message card should show stylist avatar or initials, stylist display name, date, feedback note, and a `View style brief` link.
+
+- :MessagesScreen: should support pull-to-refresh on touch devices when a brief exists.
+
+- Pull-to-refresh should show `Pull down to refresh`, `Release to refresh`, and `Refreshing...` states and should call `loadOwnerFeedback()`.
+

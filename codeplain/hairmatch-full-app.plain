@@ -1,0 +1,40 @@
+---
+description: "Top-level HairMatch application specification."
+requires:
+  - 07-local-dev-tests-deploy
+---
+
+***definitions***
+
+- :App: is HairMatch, a salon hairstyle matching web application.
+
+- :FullHairMatchApp: is the complete generated implementation of :App: described by all required HairMatch specification modules.
+
+***implementation reqs***
+
+- :Implementation: of :FullHairMatchApp: should satisfy every implementation requirement in the required specification modules.
+
+- :Implementation: should generate a production-ready Cloudflare Workers repository that can run locally with Wrangler, run without npm through the fallback server, run conformance tests, and deploy through GitHub Actions.
+
+***test reqs***
+
+- :ConformanceTests: of :FullHairMatchApp: should satisfy every test requirement in the required specification modules.
+
+- :ConformanceTests: should pass with `npm test` and `node --test`.
+
+***functional specs***
+
+- :FullHairMatchApp: should implement the complete HairMatch product: static frontend, Cloudflare Worker backend, D1 database schema and migrations, OpenAI GPT Image 2 try-on backend, gallery analysis scripts, local fallback server, package scripts, tests, and CI/CD.
+
+  ***acceptance tests***
+
+  - :ConformanceTests: should pass without requiring a real OpenAI key or a real Cloudflare account.
+
+- :FullHairMatchApp: should preserve the user-visible behavior, data contracts, API routes, local development commands, deployment commands, and responsive frontend structure specified across the required modules.
+
+  ***acceptance tests***
+
+  - Running `node local-dev.mjs` should serve the app at `http://localhost:8787`.
+  - Running `npm start` should start Wrangler dev for the Worker and static assets.
+  - Running `npm run deploy` should apply remote D1 migrations before deploying the Worker.
+

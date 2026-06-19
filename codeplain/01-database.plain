@@ -1,0 +1,104 @@
+---
+description: "D1 schema, migrations, indexes, and seed-data specification."
+requires:
+  - 00-project-foundation
+---
+
+***definitions***
+
+- :D1Migrations: are ordered SQL files in `migrations` that create and evolve :Database:.
+
+- :GalleryImagesTable: is the `gallery_images` table storing :GalleryStyle: rows.
+
+- :QuizResponsesTable: is the `quiz_responses` table storing :QuizAnswerSet: snapshots by session.
+
+- :UserPhotosTable: is the `user_photos` table storing uploaded or captured :UserPhoto: records by session.
+
+- :FavouriteImagesTable: is the `favorite_images` table storing :Favourite: rows by `(session_id, image_id)`.
+
+- :StyleBriefsTable: is the `style_briefs` table storing shareable :StyleBrief: snapshots.
+
+- :BriefFeedbackTable: is the `brief_feedback` table storing :StylistFeedback: rows.
+
+- :TryOnGenerationsTable: is the `try_on_generations` table storing :TryOnGeneration: usage rows.
+
+- :GallerySeedData: is the initial hairstyle catalog seeded from GQ mens trends, Glamour womens haircuts, and additional demographic hairstyle sources.
+
+- :AiAnalysisColumns: are the final gallery metadata columns written by :GalleryAnalysisScript:.
+
+***implementation reqs***
+
+- :D1Migrations: should be plain SQL files named with four-digit numeric prefixes.
+
+- :D1Migrations: should be applied by Wrangler through the D1 binding name `DB`.
+
+- :Database: should store JSON payloads as `TEXT` columns and parse or stringify them only at API boundaries.
+
+- :Database: should use `TEXT` ids generated with `crypto.randomUUID()` or Node `randomUUID()`.
+
+- :Database: should use `CURRENT_TIMESTAMP` defaults for created and updated timestamp columns when running in D1.
+
+- :GallerySeedData: should be inserted with `INSERT OR IGNORE` so migrations remain idempotent.
+
+- :Database: should retain seed image URLs as text and should not download or rehost the seed images.
+
+- :Database: should include all indexes used by API list, session lookup, metadata filtering, and try-on usage operations.
+
+***test reqs***
+
+- :ConformanceTests: should verify schema-sensitive behavior through mock D1 API calls rather than by running SQLite directly.
+
+- :ConformanceTests: should verify that gallery rows round-trip normalized metadata, labels, features, and analysis objects.
+
+- :ConformanceTests: should verify that deleting a gallery image also removes favourites for that image.
+
+- :ConformanceTests: should verify that multiple :StyleBrief: rows can exist for one session after migration `0018`.
+
+***functional specs***
+
+- :GalleryImagesTable: should include `id TEXT PRIMARY KEY`, `title TEXT NOT NULL`, `description TEXT NOT NULL DEFAULT ''`, `image_url TEXT NOT NULL DEFAULT ''`, `features_json TEXT NOT NULL DEFAULT '[]'`, `created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP`, `labels_json TEXT NOT NULL DEFAULT '[]'`, `gender TEXT NOT NULL DEFAULT 'Unisex'`, `length TEXT NOT NULL DEFAULT ''`, `hair_type TEXT NOT NULL DEFAULT ''`, `upkeep TEXT NOT NULL DEFAULT ''`, `analysis_model TEXT NOT NULL DEFAULT ''`, `hair_subtype TEXT NOT NULL DEFAULT ''`, `face_shape TEXT NOT NULL DEFAULT ''`, `haircut_name TEXT NOT NULL DEFAULT ''`, `hair_colour TEXT NOT NULL DEFAULT ''`, `vibe TEXT NOT NULL DEFAULT ''`, `maintenance TEXT NOT NULL DEFAULT ''`, `classified_at TEXT NOT NULL DEFAULT ''`, `ethnicity TEXT NOT NULL DEFAULT ''`, `celebrity TEXT NOT NULL DEFAULT 'none'`, and `hair_thickness TEXT NOT NULL DEFAULT ''`.
+
+- :GalleryImagesTable: should have indexes for `created_at`, `gender`, `length`, `hair_type`, `upkeep`, `hair_subtype`, `classified_at`, `ethnicity`, `celebrity`, `hair_thickness`, and `hair_colour`.
+
+- :QuizResponsesTable: should include `id TEXT PRIMARY KEY`, `session_id TEXT NOT NULL`, `answers_json TEXT NOT NULL DEFAULT '{}'`, and `created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP`.
+
+- :QuizResponsesTable: should have indexes for `session_id` and `created_at`.
+
+- :UserPhotosTable: should include `id TEXT PRIMARY KEY`, `session_id TEXT NOT NULL`, `label TEXT NOT NULL DEFAULT 'Photo'`, `image_data TEXT NOT NULL`, `description TEXT NOT NULL DEFAULT ''`, `features_json TEXT NOT NULL DEFAULT '[]'`, and `created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP`.
+
+- :UserPhotosTable: should have indexes for `session_id` and `created_at`.
+
+- :FavouriteImagesTable: should include `session_id TEXT NOT NULL`, `image_id TEXT NOT NULL`, and `created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP`.
+
+- :FavouriteImagesTable: should use `PRIMARY KEY (session_id, image_id)` and should have indexes for `session_id` and `created_at`.
+
+- :StyleBriefsTable: should include `id TEXT PRIMARY KEY`, `session_id TEXT NOT NULL`, `items_json TEXT NOT NULL DEFAULT '[]'`, `created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP`, `updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP`, and `details_json TEXT NOT NULL DEFAULT '{}'`.
+
+- :StyleBriefsTable: should not enforce uniqueness on `session_id`, because one session can complete and share multiple briefs over time.
+
+- :StyleBriefsTable: should have indexes for `session_id` and `(session_id, updated_at DESC)`.
+
+- :BriefFeedbackTable: should include `id TEXT PRIMARY KEY`, `brief_id TEXT NOT NULL`, `item_id TEXT`, `author TEXT NOT NULL DEFAULT 'Reviewer'`, `rating INTEGER`, `note TEXT NOT NULL DEFAULT ''`, and `created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP`.
+
+- :BriefFeedbackTable: should have an index for `brief_id`.
+
+- :TryOnGenerationsTable: should include `id TEXT PRIMARY KEY`, `session_id TEXT NOT NULL`, `style_id TEXT`, `model TEXT NOT NULL`, and `created_at TEXT DEFAULT CURRENT_TIMESTAMP`.
+
+- :TryOnGenerationsTable: should have an index for `(session_id, created_at DESC)`.
+
+- :D1Migrations: should seed GQ mens trend rows with ids beginning `gq-2026-`, descriptions naming British GQ, image URLs from media.gq-magazine.co.uk, and features including `gq` and `mens-hair-trends`.
+
+- :D1Migrations: should seed Glamour womens haircut rows with ids beginning `glamour-2026-`, descriptions naming Glamour, image URLs from media.glamour.com, and features including `glamour` and `womens-hair-trends`.
+
+- :D1Migrations: should seed additional demographic hairstyle rows from the multi-source migration, including Black mens hair rows, womens cultural hairstyle rows, and gender-specific metadata where known.
+
+- :D1Migrations: should backfill seeded GQ rows as `Men` and seeded Glamour rows as `Women`.
+
+- :D1Migrations: should copy `features_json` into `labels_json` for older rows where labels are absent.
+
+- :D1Migrations: should migrate older `analysis_*` columns into the final unprefixed :AiAnalysisColumns:.
+
+- :D1Migrations: should delete blocked AllThingsHair rows whose ids match `ath-asianwomen-%`, whose image URL is hosted by `assets.unileversolutions.com`, and whose `classified_at` is empty.
+
+- :Database: should preserve the current migration sequence from initial storage through style brief multi-row migration.
+

@@ -1,0 +1,114 @@
+---
+description: "HairMatch foundation specification for codeplain generation."
+---
+
+***definitions***
+
+- :App: is HairMatch, a salon hairstyle matching web application that lets :User: discover hairstyles, save inspiration, build a style brief, share it with :Stylist:, and generate a realistic haircut try-on.
+
+- :User: is a visitor using :App: in a browser on desktop, tablet, or phone.
+
+- :Stylist: is a reviewer who opens a shared :StyleBrief: link and leaves feedback for :User:.
+
+- :Frontend: is a static vanilla JavaScript single-page application served from the `frontend` directory.
+
+- :Backend: is a Cloudflare Worker implemented in `server.ts`.
+
+- :Database: is a Cloudflare D1 SQLite database bound to :Backend: as `DB`.
+
+- :AssetsBinding: is the Cloudflare Workers assets binding named `ASSETS` that serves :Frontend: files.
+
+- :LocalDevServer: is a Node.js fallback HTTP server implemented in `local-dev.mjs`.
+
+- :GalleryStyle: is a hairstyle catalog item with a title, image URL, normalized hairstyle metadata, labels, maintenance guidance, and optional AI analysis metadata.
+
+- :QuizAnswerSet: is a local and server-storable JSON object keyed by quiz or filter question id.
+
+- :Favourite: is a saved :GalleryStyle: for a specific session.
+
+- :UserPhoto: is an uploaded or captured image belonging to a specific session.
+
+- :StyleBrief: is a shareable profile made of :UserPhoto: items, inspiration references, colour and treatment details, budget and timing preferences, notes, and :StylistFeedback:.
+
+- :StylistFeedback: is a note and optional rating left by :Stylist: on a :StyleBrief:.
+
+- :TryOnGeneration: is one OpenAI image-edit generation that combines a selfie with a reference hairstyle.
+
+- :GalleryAnalysisScript: is an admin Node.js script that classifies existing gallery image URLs with OpenAI and writes metadata back to :Database:.
+
+- :ConformanceTests: are Node.js built-in test cases that validate :Backend:, :Frontend: source wiring, :Database: contracts, local development behavior, and deployment configuration.
+
+***implementation reqs***
+
+- :Implementation: should be in TypeScript and modern browser JavaScript, with no frontend build step.
+
+- :Backend: should be implemented as a Cloudflare Worker default export with a `fetch(request, env)` method in `server.ts`.
+
+- :Frontend: should use classic browser scripts loaded sequentially from `frontend/app.js` so that feature files in `frontend/js` share globals in a deterministic order.
+
+- :Frontend: should use CSS files imported by `frontend/styles.css`, keeping `/styles.css` as the public entrypoint.
+
+- :Implementation: should use only platform APIs available in Cloudflare Workers, modern browsers, and Node.js 22 for tests and the fallback server.
+
+- :Implementation: should not introduce React, Vue, Svelte, Next.js, a frontend bundler, a service worker, or a client-side router dependency.
+
+- :Implementation: should preserve the public URLs `/`, `/admin`, `/app.js`, `/styles.css`, `/api/status`, `/api/gallery`, `/api/quiz-responses`, `/api/user-photos`, `/api/favorites`, `/api/briefs`, `/api/try-on`, and `/api/try-on/usage`.
+
+- :Implementation: should keep all API responses as JSON with `content-type: application/json; charset=utf-8` and an `ok` boolean.
+
+- :Implementation: should keep uploaded images as data URLs in prototype storage; it should not require R2 object storage.
+
+- :Implementation: should keep generated try-on images as returned data URLs and should not persist the generated image blob on the backend.
+
+- :Implementation: should keep user session identity anonymous and local-first by using a browser-generated session id stored in `localStorage`.
+
+- :Implementation: should use cache-busting query strings on `frontend/index.html`, `frontend/app.js`, and `frontend/styles.css` whenever public frontend source changes.
+
+***test reqs***
+
+- :ConformanceTests: should be implemented with the Node.js built-in test framework.
+
+- :ConformanceTests: should run with `node --test` and `npm test`.
+
+- :ConformanceTests: should import :Backend: by reading `server.ts`, stripping simple TypeScript annotations, and importing the generated JavaScript as a data URL.
+
+- :ConformanceTests: should use an in-memory mock D1 implementation and should not touch the real Cloudflare D1 database.
+
+- :ConformanceTests: should load frontend source through the JavaScript and CSS manifest files so split source files are tested as one logical app.
+
+- :ConformanceTests: must not require a real OpenAI API key; OpenAI calls must be mocked when successful try-on generation behavior is tested.
+
+***functional specs***
+
+- :App: should generate a repository with `server.ts`, `local-dev.mjs`, `package.json`, `wrangler.toml`, `README.md`, `.github/workflows/ci.yml`, a `migrations` directory, a `scripts` directory, a `test` directory, and a `frontend` directory.
+
+  ***acceptance tests***
+
+  - :ConformanceTests: should verify that `wrangler.toml` names the Worker `hairmatch`, points `main` to `server.ts`, binds assets from `./frontend`, enables `run_worker_first`, configures SPA fallback, and binds D1 as `DB`.
+
+- :App: should serve :Frontend: from `/` and should route `/admin` to the same public frontend shell without showing any admin-only UI controls.
+
+  ***acceptance tests***
+
+  - :ConformanceTests: should verify that `/` returns `index.html` and that `/admin` returns the same shell without admin nav, stealth admin switches, or admin edit controls.
+
+- :App: should expose :Backend: health status at `GET /api/status`.
+
+  ***acceptance tests***
+
+  - :ConformanceTests: should verify that `GET /api/status` returns `{ ok: true, app: "HairMatch", message: "Backend is running on Cloudflare Workers.", storage: "d1" }` when :Database: is configured.
+
+- :App: should use :Database: as the source of truth for gallery rows, quiz responses, user photos, favourites, style briefs, stylist feedback, and try-on usage counters.
+
+- :App: should keep the browser usable when gallery loading fails by falling back to bundled :GalleryStyle: records.
+
+- :App: should keep all customer-facing flows usable on desktop widths, tablet widths, small phone widths, and short laptop screens.
+
+- :App: should support manual local development with Wrangler using `npm start`.
+
+- :App: should support fallback local development with `node local-dev.mjs` on port `8787`, with optional `PORT` override.
+
+- :App: should support deployment with `npm run deploy`, applying remote D1 migrations before deploying the Worker.
+
+- :App: should support CI on GitHub Actions with a test job on pushes and pull requests, and a deploy job on pushes after tests pass.
+

@@ -1,0 +1,174 @@
+---
+description: "Cloudflare Worker backend and HTTP API specification."
+requires:
+  - 01-database
+---
+
+***definitions***
+
+- :WorkerEntrypoint: is the default export in `server.ts` with a `fetch(request, env)` method.
+
+- :JsonResponse: is a `Response` whose body is JSON and whose content type is `application/json; charset=utf-8`.
+
+- :ErrorResponse: is a :JsonResponse: with `{ ok: false, error: message }`.
+
+- :GalleryApi: is the collection of `/api/gallery` routes.
+
+- :QuizApi: is the `/api/quiz-responses` route.
+
+- :UserPhotoApi: is the `/api/user-photos` route.
+
+- :FavouritesApi: is the `/api/favorites` route.
+
+- :BriefApi: is the `/api/briefs` route family.
+
+- :TryOnApi: is the `/api/try-on` route family.
+
+- :OpenAiTryOnRequest: is a multipart form request sent by :Backend: to `https://api.openai.com/v1/images/edits`.
+
+- :TryOnPrompt: is the instruction text that tells OpenAI to edit only the user's hair while preserving the user's identity and the original photo context.
+
+***implementation reqs***
+
+- :Backend: should use small route functions that accept `(request, env)` or `(request, db)` and return a `Promise<Response>`.
+
+- :Backend: should keep validation and normalization at the route layer.
+
+- :Backend: should use D1 prepared statements with `.prepare(sql).bind(...).run()`, `.first()`, and `.all()`.
+
+- :Backend: should throw or return a 503 :ErrorResponse: when :Database: is required but `env.DB` is missing.
+
+- :Backend: should read JSON bodies with a safe helper that returns `null` for invalid JSON.
+
+- :Backend: should expose `OPENAI_API_KEY` and `TRY_ON_GENERATION_LIMIT` as Worker environment variables.
+
+- :Backend: should default `TRY_ON_GENERATION_LIMIT` to `5` when the environment variable is absent, invalid, or not positive.
+
+- :Backend: should normalize gender to `Men`, `Women`, or `Unisex`.
+
+- :Backend: should normalize length to `Very Short`, `Short`, `Medium`, `Long`, or `Very Long`.
+
+- :Backend: should normalize hair type to `Straight Hair`, `Wavy Hair`, `Curly Hair`, or `Coily Hair`.
+
+- :Backend: should normalize maintenance to `Low`, `Medium`, or `High`.
+
+- :Backend: should parse stored JSON columns defensively and fall back to empty arrays or objects on malformed values.
+
+- :Backend: should preserve static asset serving through `env.ASSETS.fetch`.
+
+- :Backend: should serve `/admin` and `/admin/` by fetching `/index.html` from :AssetsBinding:.
+
+***test reqs***
+
+- :ConformanceTests: should verify all public API routes with mock D1.
+
+- :ConformanceTests: should verify validation failures return the expected status and message.
+
+- :ConformanceTests: should verify :TryOnApi: rejects generation when `OPENAI_API_KEY` is absent.
+
+- :ConformanceTests: should mock global `fetch` for successful OpenAI image edit calls.
+
+- :ConformanceTests: should verify unknown API routes return a 404 JSON error.
+
+***functional specs***
+
+- :WorkerEntrypoint: should call an API router before static assets so API routes take precedence over files.
+
+- `GET /api/status` should return `{ ok: true, app: "HairMatch", message: "Backend is running on Cloudflare Workers.", storage: "d1" }` when `env.DB` exists.
+
+- `GET /api/status` should return the same payload with `storage: "not_configured"` when `env.DB` is missing.
+
+- :GalleryApi: should return all :GalleryStyle: rows ordered by `created_at DESC` at `GET /api/gallery`.
+
+- :GalleryApi: should map database rows into frontend gallery objects with fields `id`, `title`, `description`, `imageUrl`, `gender`, `length`, `hairType`, `hairThickness`, `maintenanceLevel`, `analysis`, `features`, `labels`, and `createdAt`.
+
+- :GalleryApi: should include `analysis.hairType`, `analysis.hairSubtype`, `analysis.hairThickness`, `analysis.length`, `analysis.faceShape`, `analysis.gender`, `analysis.ethnicity`, `analysis.celebrity`, `analysis.upkeep`, `analysis.haircutName`, `analysis.hairColour`, `analysis.vibe`, `analysis.maintenance`, `analysis.model`, and `analysis.updatedAt`.
+
+- `POST /api/gallery` should require a non-empty string `title`.
+
+- `POST /api/gallery` should create a gallery row from `title`, `description`, `imageUrl`, `gender`, `length`, `hairType`, `maintenanceLevel`, `features`, and `labels`.
+
+- `POST /api/gallery` should deduplicate labels case-insensitively and should fall back to `features` when `labels` is absent.
+
+- `PATCH /api/gallery/:id/attributes` and `PUT /api/gallery/:id/attributes` should update `gender`, `length`, `hairType`, and `maintenanceLevel`.
+
+- Updating gallery attributes should reject unknown `length`, `hairType`, or `maintenanceLevel` values.
+
+- `PATCH /api/gallery/:id/labels` and `PUT /api/gallery/:id/labels` should require a `labels` array and write deduplicated `labels_json`.
+
+- `DELETE /api/gallery/:id` should delete the gallery row and all favourites pointing to that row.
+
+- :QuizApi: should list all quiz responses at `GET /api/quiz-responses` and should filter by `sessionId` when the query parameter is present.
+
+- :QuizApi: should create a quiz response at `POST /api/quiz-responses` with required non-empty `sessionId` and optional object `answers`.
+
+- :UserPhotoApi: should list all user photos at `GET /api/user-photos` and should filter by `sessionId` when the query parameter is present.
+
+- :UserPhotoApi: should create a user photo at `POST /api/user-photos` with required `sessionId` and required non-empty `imageData`.
+
+- :UserPhotoApi: should default missing or blank `label` to `Photo`.
+
+- :FavouritesApi: should require `sessionId` for `GET /api/favorites`.
+
+- :FavouritesApi: should create favourites idempotently with `INSERT OR IGNORE` at `POST /api/favorites`.
+
+- :FavouritesApi: should delete favourites at `DELETE /api/favorites` using `sessionId` and `imageId` from either JSON body or query string.
+
+- :BriefApi: should require `sessionId` for `GET /api/briefs` and should return all briefs for that session ordered by `updated_at DESC`.
+
+- :BriefApi: should include each brief's feedback array when listing briefs.
+
+- :BriefApi: should create or update a brief at `POST /api/briefs` with required `sessionId`, required `items` array, optional `id`, and optional object `details`.
+
+- `POST /api/briefs` should upsert by brief `id` when `id` is present; otherwise it should create a new brief id.
+
+- `GET /api/briefs/:id` should return a brief by id with its feedback ordered by `created_at ASC`.
+
+- `GET /api/briefs/:id` should return 404 when the brief does not exist.
+
+- `POST /api/briefs/:id/feedback` should require an existing brief.
+
+- `POST /api/briefs/:id/feedback` should accept `author`, `itemId`, `rating`, and `note`.
+
+- Feedback creation should require a non-empty note, a rating, or both.
+
+- Feedback author should default to `Stylist` and should be trimmed to at most 80 characters.
+
+- Feedback rating should be rounded and clamped between `0` and `5`.
+
+- `PUT /api/briefs/:id/feedback/:feedbackId` and `PATCH /api/briefs/:id/feedback/:feedbackId` should update an existing feedback row and should enforce the same note-or-rating validation.
+
+- `DELETE /api/briefs/:id/feedback/:feedbackId` should delete an existing feedback row and return `{ ok: true, id: feedbackId }`.
+
+- :TryOnApi: should report usage at `GET /api/try-on/usage?sessionId=...`.
+
+- Try-on usage should return `limit`, `used`, and `remaining`, with `remaining` never below zero.
+
+- :TryOnApi: should create a generated try-on at `POST /api/try-on`.
+
+- `POST /api/try-on` should require `OPENAI_API_KEY`; when absent it should return status `503` and error `OpenAI API key is not configured.`.
+
+- `POST /api/try-on` should require a non-empty `sessionId`, non-empty `userImageData`, and either `referenceImageData` or `referenceImageUrl`.
+
+- `POST /api/try-on` should enforce the per-session generation limit before calling OpenAI.
+
+- `POST /api/try-on` should accept data URL images and HTTP or HTTPS image URLs as OpenAI image inputs.
+
+- Data URL image inputs should be converted to `Blob` objects using their MIME type.
+
+- URL image inputs should be fetched with `accept: image/*` and rejected when the response is not an image.
+
+- :OpenAiTryOnRequest: should be a `FormData` request with `model` set to `gpt-image-2`, `quality` set to `medium`, `size` set to `1024x1536`, the generated :TryOnPrompt:, and two `image[]` parts named from their detected extensions.
+
+- :TryOnPrompt: should state that the first image is the user selfie, the second image is only the hairstyle reference, only hair should change, identity and non-hair attributes should be preserved exactly, and the output should be photorealistic and salon-honest.
+
+- When OpenAI returns an error, :TryOnApi: should return OpenAI's error message if available.
+
+- When OpenAI does not return `data[0].b64_json`, :TryOnApi: should return status `502` and error `Try-on generation did not return an image.`.
+
+- After a successful OpenAI response, :TryOnApi: should insert a :TryOnGeneration: row with the session id, style id, and model `gpt-image-2`.
+
+- After a successful OpenAI response, :TryOnApi: should return `imageData` as `data:image/png;base64,<b64_json>`.
+
+- Non-API paths should be passed to :AssetsBinding: unchanged except for `/admin` and `/admin/`.
+

@@ -1,0 +1,144 @@
+---
+description: "HairMatch frontend shell, source split, persistent state, startup, and routing specification."
+requires:
+  - 02-cloudflare-worker-api
+---
+
+***definitions***
+
+- :IndexHtml: is `frontend/index.html`.
+
+- :StylesEntrypoint: is `frontend/styles.css`.
+
+- :ScriptEntrypoint: is `frontend/app.js`.
+
+- :FrontendScriptManifest: is `frontend/js/manifest.json`.
+
+- :FrontendCssManifest: is `frontend/css/manifest.json`.
+
+- :AppShell: is the permanent HTML structure in :IndexHtml: outside the dynamic `#app` region.
+
+- :AppState: is the global `state` object created by `frontend/js/state.js`.
+
+- :View: is one of `home`, `quiz`, `results`, `brief`, `complete`, `messages`, or `shared`.
+
+- :LocalStorageKeys: are browser keys beginning with `hairmatch.frontend.`.
+
+- :OverlayStack: is the detail, favourites, product, and try-on overlays in :AppShell:.
+
+- :FrontendApiClient: is the `apiJson()` helper that wraps `fetch` for JSON API calls.
+
+***implementation reqs***
+
+- :Frontend: should be implemented as static HTML, CSS, and classic JavaScript files.
+
+- :IndexHtml: should load Geist and Instrument Serif from Google Fonts.
+
+- :IndexHtml: should load `/styles.css` and `/app.js` with cache-busting `?v=` query strings.
+
+- :StylesEntrypoint: should contain only `@import` statements for CSS files under `frontend/css`.
+
+- :ScriptEntrypoint: should define an ordered list named `FRONTEND_SCRIPT_FILES` and should append each script to `document.head` sequentially.
+
+- :ScriptEntrypoint: should show `Could not load HairMatch. Please refresh.` in `#app` if any feature script fails to load.
+
+- :FrontendScriptManifest: should describe every JavaScript feature file and its purpose.
+
+- :FrontendCssManifest: should describe every CSS feature file and its purpose.
+
+- :Frontend: should keep feature modules as globals and should not use ES module imports in browser code.
+
+- :Frontend: should use `escapeHtml()` and `escapeAttr()` before rendering untrusted text or attributes.
+
+- :Frontend: should tolerate unavailable `localStorage` by falling back to in-memory/default state.
+
+***test reqs***
+
+- :ConformanceTests: should verify that :IndexHtml: contains `#results-grid`, `/app.js`, `/styles.css`, `#detail-try-on`, and `#try-on-overlay`.
+
+- :ConformanceTests: should verify that the concatenated frontend source contains all required API endpoint constants and core functions.
+
+- :ConformanceTests: should verify that removed admin UI identifiers are not present in :IndexHtml:, JavaScript, or CSS.
+
+***functional specs***
+
+- :AppShell: should include a sticky desktop topbar with a `HairMatch` brand button and nav buttons for Search, Messages, and Profile.
+
+- :AppShell: should include a mobile bottom nav with icon buttons for Search, Messages, and Profile.
+
+- :AppShell: should include a dynamic main element with id `app`.
+
+- :AppShell: should include a hidden gallery grid with id `results-grid` for compatibility with tests and startup.
+
+- :AppShell: should include a hidden `select[data-filter="gender"]` for compatibility with older filtering expectations.
+
+- :OverlayStack: should include `#detail-overlay`, `#favourites-overlay`, `#product-overlay`, and `#try-on-overlay`.
+
+- The detail overlay should contain anchors for image, metadata, title, try-on button, save style button, maintenance text, product chips, and similar results.
+
+- The favourites overlay should contain a saved styles grid and an empty state.
+
+- The product overlay should contain product name, description, product photos, how-to-use list, and result example slots.
+
+- The try-on overlay should contain `#try-on-body`.
+
+- :ScriptEntrypoint: should load JavaScript files in this exact order: `storage.js`, `icons.js`, `fallback-styles.js`, `products-and-normalizers.js`, `state.js`, `data-loading.js`, `quiz-filters.js`, `rendering.js`, `favourites.js`, `brief.js`, `brief-sharing.js`, `shared-brief.js`, `try-on.js`, `detail-overlay.js`, `product-overlay.js`, `uploads.js`, `utilities.js`, and `init.js`.
+
+- :StylesEntrypoint: should import CSS files in this exact order: `base.css`, `home.css`, `quiz.css`, `results.css`, `short-laptop.css`, `brief.css`, `responsive.css`, and `products-tryon.css`.
+
+- :LocalStorageKeys: should include keys for session id, current view, quiz answers, quiz step, quiz complete flag, previous view, brief items, brief id, completed brief ids, brief details, brief details open state, reviewer name, and feed onboarding dismissal.
+
+- :FrontendApiClient: should set `content-type: application/json` automatically when a request body is present.
+
+- :FrontendApiClient: should parse JSON responses defensively and throw an `Error` with `err.data` when HTTP status is not OK or returned JSON has `ok: false`.
+
+- :AppState: should initialize `sessionId` from `localStorage` or generate a UUID-like fallback.
+
+- :AppState: should initialize `styles` from bundled fallback styles and replace them with database styles after gallery loading succeeds.
+
+- :AppState: should initialize `view` from stored view while migrating older stored values `welcome` to `home` and `search` to `results`.
+
+- :AppState: should initialize `answers`, `quizStep`, `quizComplete`, favourites, style brief data, brief details, owner feedback, shared brief state, try-on state, and discovery filter state.
+
+- :AppState: should track `currentDetailId` and `currentProductId` outside the main state object.
+
+- Calling `setView("quiz")` should push `?quiz=<step>` into history.
+
+- Calling `setView("results")` should push `?results` into history.
+
+- Calling `setView("brief")` should push `?brief` into history and load owner feedback.
+
+- Calling `setView("complete")` should push `?complete` into history.
+
+- Calling `setView("messages")` should push `?messages` into history and load owner feedback.
+
+- Calling `setView("home")` should push `/` into history.
+
+- Leaving results should close preference and refine menus.
+
+- Leaving brief or complete views should close brief picker and reference add overlays when no higher overlay is open.
+
+- `setQuizStep()` should clamp the step between `0` and the last quiz question, persist it, update history while in quiz view, render, and scroll to top.
+
+- `startOver()` should clear answers, reset quiz step, close filters and menus, restore the length gender filter to masculine, and go home.
+
+- Startup should bind every `[data-nav]` button to `setView()`.
+
+- Startup should close overlays when their close buttons or overlay backdrops are clicked.
+
+- Startup should close overlays on Escape from highest layer to lowest layer.
+
+- Startup should support browser back and forward navigation for `quiz`, `results`, `brief`, `complete`, `messages`, `shared`, and `home`.
+
+- Startup should initialize the first view from URL query parameters in this priority: `quiz`, `search` or `results`, shared `brief` review/client link, `complete`, `brief`, `messages`, then `home`.
+
+- Startup should render once, load gallery, load favourites, load shared brief data when needed, and load owner feedback for Profile or Messages.
+
+- `loadGallery()` should call `/api/gallery`, map returned items through `galleryItemToStyle()`, mark gallery loading complete, synchronize saved references into the brief, re-render, open `?style=` details if present, and re-render favourites if the favourites overlay is open.
+
+- `loadGallery()` should keep fallback styles and mark gallery load error when `/api/gallery` fails.
+
+- `loadFavourites()` should call `/api/favorites?sessionId=<sessionId>`, merge optimistic pending favourite operations, replace `state.favourites`, synchronize saved references into the brief, update count, and render.
+
+- Navigation highlighting should mark the active desktop and mobile nav destination, treating `complete` as Profile.
+

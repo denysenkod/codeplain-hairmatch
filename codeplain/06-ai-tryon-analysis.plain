@@ -1,0 +1,154 @@
+---
+description: "HairMatch GPT Image 2 try-on and OpenAI gallery analysis specification."
+requires:
+  - 05-profile-brief-messages
+---
+
+***definitions***
+
+- :TryOnOverlay: is the frontend popup opened from :DetailOverlay: for generating a realistic haircut try-on.
+
+- :TryOnSelfie: is the user's uploaded, captured, or profile-derived selfie image.
+
+- :TryOnReference: is the selected :GalleryStyle: image used only as hairstyle reference.
+
+- :GeneratedTryOnImage: is the base64 PNG data URL returned by :TryOnApi:.
+
+- :OpenAiImagesApi: is OpenAI's image generation and editing HTTP API.
+
+- :OpenAiResponsesApi: is OpenAI's `/v1/responses` API used by admin gallery analysis scripts.
+
+- :FullGalleryAnalysisScript: is `scripts/analyze-gallery-images.mjs`.
+
+- :CelebrityAnalysisScript: is `scripts/analyze-gallery-celebrities.mjs`.
+
+- :HairAttributesAnalysisScript: is `scripts/analyze-gallery-hair-attributes.mjs`.
+
+***implementation reqs***
+
+- :TryOnApi: should use :OpenAiImagesApi: from the backend, never from the browser.
+
+- :TryOnApi: should use model `gpt-image-2`.
+
+- :TryOnApi: should call `https://api.openai.com/v1/images/edits` with a `Bearer` token from `OPENAI_API_KEY`.
+
+- :TryOnApi: should request output size `1024x1536` and quality `medium`.
+
+- :TryOnOverlay: should call :TryOnApi: through the existing :FrontendApiClient:.
+
+- :TryOnOverlay: should never send `OPENAI_API_KEY` to the browser.
+
+- :GalleryAnalysisScript: files should be Node.js executable scripts using ES modules.
+
+- :GalleryAnalysisScript: files should load `.env` manually without overriding already exported environment variables.
+
+- :GalleryAnalysisScript: files should use `OPENAI_API_KEY` and optional `OPENAI_MODEL`.
+
+- :GalleryAnalysisScript: files should default `OPENAI_MODEL` to `gpt-5-mini-2025-08-07`.
+
+- :GalleryAnalysisScript: files should call Wrangler through `npx wrangler d1 execute DB --local|--remote --json --command <sql>`.
+
+- :GalleryAnalysisScript: files should implement `--local`, `--remote`, `--dry-run`, `--limit`, `--delay-ms`, `--concurrency`, `--retries`, and `--database` or `--binding` options.
+
+***test reqs***
+
+- :ConformanceTests: should verify :TryOnApi: requires `OPENAI_API_KEY`.
+
+- :ConformanceTests: should verify :TryOnApi: honors configured and default usage limits.
+
+- :ConformanceTests: should mock OpenAI and verify exactly five successful default-limit try-on generations are allowed per session.
+
+- :ConformanceTests: should inspect :GalleryAnalysisScript: source for OpenAI Responses API usage, image input usage, structured JSON schemas, retries, concurrency, and D1 update statements.
+
+***functional specs***
+
+- :TryOnOverlay: should open from the detail popup's `Try on` button for the currently selected style.
+
+- :TryOnOverlay: should prefill :TryOnSelfie: from the latest :OwnHairItem: in the profile when one exists.
+
+- :TryOnOverlay: should show usage text while loading usage, then show remaining and total try-ons when usage is known.
+
+- :TryOnOverlay: should show side-by-side frames for reference haircut and user selfie before generation.
+
+- :TryOnOverlay: should let :User: upload a different selfie.
+
+- Uploading a selfie in :TryOnOverlay: should ask whether to use this selfie in Profile too.
+
+- Answering yes to the profile update prompt should update the existing source :OwnHairItem: when possible, otherwise create a new :OwnHairItem:, and mirror the image to :UserPhotoApi:.
+
+- Answering no to the profile update prompt should keep the selfie only for the current try-on.
+
+- The Apply haircut button should be disabled when no selfie exists, no reference image exists, generation is in progress, profile-update prompt is open, or remaining usage is zero.
+
+- Applying a try-on should set status to `generating`, clear previous result and error, render a generation frame, and call `POST /api/try-on`.
+
+- :TryOnOverlay: should pass `sessionId`, `styleId`, `styleName`, `userImageData`, and `referenceImageUrl` to :TryOnApi:.
+
+- While generating, :TryOnOverlay: should show animated visual feedback and copy `Generating your try-on`.
+
+- When generation succeeds, :TryOnOverlay: should render :GeneratedTryOnImage: with caption `Your realistic try-on`.
+
+- When generation succeeds, :TryOnOverlay: should update local usage limit, used count, and remaining count from the API response.
+
+- When generation fails, :TryOnOverlay: should show the API error message and should update usage fields from the error payload when present.
+
+- :TryOnOverlay: should let :User: download :GeneratedTryOnImage: as `hairmatch-try-on-<style-name>.png`.
+
+- :TryOnOverlay: should let :User: save :GeneratedTryOnImage: to favourites.
+
+- Saving a generated try-on result should create a :TryOnReferenceItem: in the references partition with source `try-on`, `referenceStyleId`, generated `imageUrl`, name `Try-on: <style name>`, and annotation `Generated try-on based on <style name>.`
+
+- Saving a generated try-on result should also favourite the source :GalleryStyle: when not already favourited.
+
+- :TryOnApi: should count only successful generations by inserting :TryOnGenerationsTable: rows after OpenAI succeeds.
+
+- :TryOnApi: should return 429 before OpenAI is called when the per-session generation limit has been reached.
+
+- :FullGalleryAnalysisScript: should select gallery rows with non-empty `image_url` and missing `classified_at`, `ethnicity`, or `celebrity` unless `--force` is used.
+
+- :FullGalleryAnalysisScript: should send one `input_text` prompt and one `input_image` URL to :OpenAiResponsesApi: for each selected row.
+
+- :FullGalleryAnalysisScript: should request strict JSON schema output named `haircut_image_analysis`.
+
+- :FullGalleryAnalysisScript: schema should require `hair_type`, `hair_subtype`, `length`, `face_shape`, `gender`, `ethnicity`, `celebrity`, `upkeep`, `haircut_name`, `hair_colour`, `vibe`, and `maintenance`.
+
+- :FullGalleryAnalysisScript: should restrict `hair_type` to `straight`, `wavy`, `curly`, or `coily`.
+
+- :FullGalleryAnalysisScript: should restrict `hair_subtype` to `1A`, `1B`, `1C`, `2A`, `2B`, `2C`, `3A`, `3B`, `3C`, `4A`, `4B`, or `4C`.
+
+- :FullGalleryAnalysisScript: should restrict `length` to `very short`, `short`, `medium`, `long`, or `very long`.
+
+- :FullGalleryAnalysisScript: should restrict `face_shape` to `oval`, `round`, `square`, `heart`, `diamond`, `rectangle`, or `triangle`.
+
+- :FullGalleryAnalysisScript: should restrict `gender` to `male` or `female` and should write UI gender as `Men` or `Women`.
+
+- :FullGalleryAnalysisScript: should restrict `ethnicity` to `black`, `south east asian`, `asian`, `south-asian`, `latino`, `middle-eastern`, or `white`.
+
+- :FullGalleryAnalysisScript: should normalize celebrity values like unknown, no, and not a celebrity to exactly `none`.
+
+- :FullGalleryAnalysisScript: should write hair type, subtype, length, face shape, ethnicity, celebrity, upkeep, haircut name, hair colour, vibe, maintenance, analysis model, `classified_at = CURRENT_TIMESTAMP`, gender, and merged labels back to :GalleryImagesTable:.
+
+- :FullGalleryAnalysisScript: should merge existing labels, existing features, and analysis values into `labels_json` with case-insensitive deduplication.
+
+- :CelebrityAnalysisScript: should select only rows whose `celebrity` is currently `none`.
+
+- :CelebrityAnalysisScript: should request strict JSON schema output named `gallery_celebrity_analysis` with required `celebrity`.
+
+- :CelebrityAnalysisScript: should write `celebrity` and merged `labels_json` without changing hair type or other hairstyle attributes.
+
+- :HairAttributesAnalysisScript: should select rows with missing `hair_thickness` or `hair_colour` unless `--force` is used.
+
+- :HairAttributesAnalysisScript: should request strict JSON schema output named `gallery_hair_attributes_analysis`.
+
+- :HairAttributesAnalysisScript: should restrict `hair_thickness` to `especially thin`, `thin`, `thick`, or `especially thick`.
+
+- :HairAttributesAnalysisScript: should restrict `hair_colour` to `black`, `brown`, `blonde`, `red`, `grey`, or `other`.
+
+- :HairAttributesAnalysisScript: should write `hair_thickness`, `hair_colour`, `analysis_model`, and merged `labels_json`.
+
+- :GalleryAnalysisScript: files should support worker-style concurrency with a shared next-index counter and `Promise.all(workers)`.
+
+- :GalleryAnalysisScript: files should retry OpenAI and D1 update failures with exponential backoff.
+
+- :GalleryAnalysisScript: files should print each failed row and set non-zero process exit code when failures remain.
+

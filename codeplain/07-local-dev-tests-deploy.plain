@@ -1,0 +1,152 @@
+---
+description: "HairMatch local development, test suite, package scripts, Cloudflare config, and CI/CD specification."
+requires:
+  - 06-ai-tryon-analysis
+---
+
+***definitions***
+
+- :PackageScripts: are npm scripts in `package.json`.
+
+- :WranglerConfig: is `wrangler.toml`.
+
+- :GithubActionsWorkflow: is `.github/workflows/ci.yml`.
+
+- :MockD1: is the in-memory D1 implementation used by :ConformanceTests:.
+
+- :LocalPersistentStore: is `.local-dev-store.json`.
+
+- :StaticAssetServer: is the static file serving part of :LocalDevServer:.
+
+***implementation reqs***
+
+- :PackageScripts: should keep `"type": "module"`.
+
+- :PackageScripts: should keep `"main": "server.ts"`.
+
+- :PackageScripts: should include `start`, `dev:local`, `test`, `deploy`, `db:list`, `db:migrate:local`, `db:migrate:remote`, `analyze:gallery:local`, `analyze:gallery:remote`, `analyze:celebrities:local`, `analyze:celebrities:remote`, `analyze:hair-attributes:local`, and `analyze:hair-attributes:remote`.
+
+- :WranglerConfig: should bind D1 as `DB`, assets as `ASSETS`, assets directory as `./frontend`, and migrations directory as `migrations`.
+
+- :WranglerConfig: should set `not_found_handling = "single-page-application"`.
+
+- :GithubActionsWorkflow: should run on pushes and pull requests.
+
+- :GithubActionsWorkflow: should use Node.js 22 and npm cache.
+
+- :GithubActionsWorkflow: should run `npm ci` before tests and deploy.
+
+- :LocalDevServer: should be implemented with Node's built-in `http`, `fs/promises`, `path`, `url`, and `crypto` modules.
+
+- :LocalDevServer: should not require npm packages.
+
+- :LocalDevServer: should use memory storage for gallery rows, quiz responses, user photos, favourites, and try-on generation counters.
+
+- :LocalDevServer: should persist briefs and feedback to :LocalPersistentStore: so shared review links survive restarts.
+
+***test reqs***
+
+- :ConformanceTests: should include one test per public behavior listed in this file and should avoid external network calls.
+
+- :ConformanceTests: should verify :GithubActionsWorkflow: applies remote D1 migrations before deploying.
+
+- :ConformanceTests: should verify :LocalDevServer: seeds gallery memory from SQL migrations and persists shared briefs.
+
+***functional specs***
+
+- `npm start` should run `npx wrangler dev`.
+
+- `npm run dev:local` should run `node local-dev.mjs`.
+
+- `npm test` should run `node --test`.
+
+- `npm run db:migrate:local` should run `npx wrangler d1 migrations apply DB --local`.
+
+- `npm run db:migrate:remote` should run `npx wrangler d1 migrations apply DB --remote`.
+
+- `npm run db:list` should run `npx wrangler d1 list`.
+
+- `npm run deploy` should run remote D1 migrations and then `npx wrangler deploy`.
+
+- Gallery analysis package scripts should invoke the corresponding Node script with `--local` or `--remote`.
+
+- :WranglerConfig: should name the Worker `hairmatch`.
+
+- :WranglerConfig: should set `compatibility_date` to a `YYYY-MM-DD` value.
+
+- :WranglerConfig: should include the existing D1 `database_name = "hairmatch"` and configured `database_id`.
+
+- :GithubActionsWorkflow: should define a `test` job that checks out code, sets up Node.js 22, installs dependencies with `npm ci`, and runs `npm test`.
+
+- :GithubActionsWorkflow: should define a `deploy` job that needs `test`, runs only on push events, uses a deploy concurrency group scoped to the current GitHub ref, applies remote D1 migrations, and deploys the Worker.
+
+- :GithubActionsWorkflow: deploy steps should receive the Cloudflare API token and Cloudflare account id from repository secrets.
+
+- :LocalDevServer: should listen on `process.env.PORT` or `8787`.
+
+- :LocalDevServer: should expose `/api/status` with storage `memory+persistent-briefs`.
+
+- :LocalDevServer: should parse JSON request bodies safely and return `null` on malformed JSON.
+
+- :LocalDevServer: should infer MIME types for HTML, JavaScript, JSX, CSS, JSON, SVG, PNG, JPG, JPEG, and WEBP.
+
+- :LocalDevServer: should reject static asset path traversal.
+
+- :LocalDevServer: should serve `/`, `/admin`, and `/admin/` from `frontend/index.html`.
+
+- :LocalDevServer: should serve API routes with behavior matching :Backend: closely enough for local development.
+
+- :LocalDevServer: should seed its memory gallery by reading SQL migration files, finding `INSERT OR IGNORE INTO gallery_images (...) VALUES ...;` blocks, parsing string tuples, and mapping rows to frontend gallery objects.
+
+- :LocalDevServer: should infer seed gender as `Men` for GQ or mens-hair-trends rows, `Women` for Glamour or womens-hair-trends rows, and `Unisex` otherwise.
+
+- :LocalDevServer: should implement the same try-on prompt, OpenAI image edits form fields, generation limit, and response shape as :Backend:.
+
+- :LocalDevServer: should persist only `briefs` and `briefFeedback` arrays to :LocalPersistentStore:.
+
+- :MockD1: should support table arrays for gallery images, quiz responses, user photos, favourite images, try-on generations, style briefs, and brief feedback.
+
+- :MockD1: should implement `prepare().bind().run()`, `first()`, and `all()` for the SQL patterns used by :Backend:.
+
+- :ConformanceTests: should verify frontend root serving.
+
+- :ConformanceTests: should verify admin route frontend serving.
+
+- :ConformanceTests: should verify backend status JSON.
+
+- :ConformanceTests: should verify gallery create and list.
+
+- :ConformanceTests: should verify gallery attribute update.
+
+- :ConformanceTests: should verify gallery label update.
+
+- :ConformanceTests: should verify gallery delete cascades to favourites.
+
+- :ConformanceTests: should verify quiz response and user photo creation/listing.
+
+- :ConformanceTests: should verify try-on API key requirement.
+
+- :ConformanceTests: should verify try-on usage limit reporting.
+
+- :ConformanceTests: should verify try-on per-session generation limit.
+
+- :ConformanceTests: should verify favourite creation, listing, and deletion.
+
+- :ConformanceTests: should verify shareable brief creation, update, listing, readback, and reviewer feedback.
+
+- :ConformanceTests: should verify reviewer feedback edit and delete.
+
+- :ConformanceTests: should verify empty feedback rejection and missing brief errors.
+
+- :ConformanceTests: should verify unknown static routes return `404 Not found`.
+
+- :ConformanceTests: should verify static frontend source wiring to image and database APIs.
+
+- :ConformanceTests: should verify Wrangler config.
+
+- :ConformanceTests: should verify GitHub Actions deploy ordering.
+
+- :ConformanceTests: should verify gallery image AI analysis script wiring.
+
+- :ConformanceTests: should verify local dev gallery seeding and brief persistence.
+
