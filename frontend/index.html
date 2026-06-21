@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HairMatch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css?v=2026-06-16-refine-stability" />
+</head>
+<body>
+  <header class="topbar">
+    <button class="brand-btn" id="home-btn" data-nav="home" type="button">HairMatch</button>
+    <nav class="top-nav" aria-label="Primary">
+      <button class="nav-link" data-nav="results" type="button">Search</button>
+      <button class="nav-link" data-nav="messages" type="button">Messages</button>
+      <button class="nav-link" data-nav="brief" type="button">Profile</button>
+    </nav>
+  </header>
+
+  <main class="app-shell" id="app">
+    <section class="results-grid" id="results-grid" hidden></section>
+    <select data-filter="gender" hidden aria-hidden="true" tabindex="-1">
+      <option value="">Gender</option>
+    </select>
+  </main>
+
+  <div class="overlay" id="detail-overlay" hidden>
+    <div class="overlay-card">
+      <button class="close-btn" id="close-detail" type="button" aria-label="Close">&times;</button>
+
+      <div class="detail-layout">
+        <div class="detail-image" id="detail-image"></div>
+        <div class="detail-copy">
+          <p class="eyebrow" id="detail-meta">Style</p>
+          <h2 id="detail-name">Style</h2>
+
+          <div class="detail-actions">
+            <button class="primary-btn detail-try-on-btn" id="detail-try-on" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3l1.7 5.1L19 10l-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9L12 3z"></path>
+                <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z"></path>
+                <path d="M5 3l.7 1.8L8 5.5l-2.3.7L5 8l-.7-1.8L2 5.5l2.3-.7L5 3z"></path>
+              </svg>
+              <span>Try on</span>
+            </button>
+            <button class="primary-btn" id="detail-like" type="button">Save style</button>
+          </div>
+
+          <section class="detail-section">
+            <h3>How to maintain it</h3>
+            <p id="detail-maintenance"></p>
+          </section>
+
+          <section class="detail-section" id="detail-products-section" hidden>
+            <h3>Products to style it</h3>
+            <div class="detail-products" id="detail-products"></div>
+          </section>
+        </div>
+      </div>
+
+      <section class="similar-section">
+        <h3>More like this</h3>
+        <div class="similar-results" id="similar-results"></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="overlay" id="favourites-overlay" hidden>
+    <div class="overlay-card">
+      <button class="close-btn" id="close-favourites" type="button" aria-label="Close">&times;</button>
+      <div class="overlay-heading">
+        <p class="eyebrow">Your profile</p>
+        <h2>Saved styles</h2>
+      </div>
+      <div class="results-grid" id="favourites-grid"></div>
+      <p class="empty-state" id="favourites-empty">No saved styles yet. Like photos in search or results to build your profile.</p>
+    </div>
+  </div>
+
+  <div class="overlay" id="product-overlay" hidden>
+    <div class="overlay-card">
+      <button class="close-btn" id="close-product" type="button" aria-label="Close">&times;</button>
+
+      <div class="product-popup">
+        <p class="eyebrow">Styling product</p>
+        <h2 id="product-name">Product</h2>
+        <p class="product-description" id="product-description"></p>
+
+        <div class="product-photos" id="product-photos"></div>
+
+        <section class="product-howto" id="product-howto-section" hidden>
+          <h3>How to use it</h3>
+          <ol id="product-howto"></ol>
+        </section>
+
+        <section class="product-result">
+          <h3>This is what a result looks like</h3>
+          <div class="product-transition" id="product-transition"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="try-on-overlay" hidden>
+    <div class="overlay-card try-on-card">
+      <button class="close-btn" id="close-try-on" type="button" aria-label="Close">&times;</button>
+      <div id="try-on-body"></div>
+    </div>
+  </div>
+
+
+  <nav class="bottom-nav" aria-label="Primary">
+    <button class="bottom-nav-btn" data-nav="results" type="button" aria-label="Search">
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="M16 16l4 4"></path></svg>
+      <span class="bottom-nav-label">Search</span>
+    </button>
+    <button class="bottom-nav-btn" data-nav="messages" type="button" aria-label="Messages">
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 19 16H9l-4 4v-4H5a1.5 1.5 0 0 1-1.5-1.5v-8A1.5 1.5 0 0 1 5 5z"></path></svg>
+      <span class="bottom-nav-label">Messages</span>
+    </button>
+    <button class="bottom-nav-btn" data-nav="brief" type="button" aria-label="Profile">
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"></path></svg>
+      <span class="bottom-nav-label">Profile</span>
+    </button>
+  </nav>
+
+  <script src="/app.js?v=2026-06-16-refine-fallbacks"></script>
+</body>
+</html>
