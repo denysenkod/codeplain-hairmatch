@@ -1,0 +1,16 @@
+name = "hairmatch"
+main = "server.ts"
+compatibility_date = "2026-05-27"
+
+[assets]
+directory = "./frontend"
+binding = "ASSETS"
+run_worker_first = true
+not_found_handling = "single-page-application"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "hairmatch"
+database_id = "361684ac-6e4a-4ac7-bfa9-83c4306fe92b"
+migrations_dir = "migrations"
+

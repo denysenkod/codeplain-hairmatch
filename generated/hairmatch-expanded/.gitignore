@@ -1,0 +1,10 @@
+node_modules
+.wrangler
+.dev.vars*
+.env
+.next
+.local-dev-store.json
+.local-dev.err.log
+.local-dev.out.log
+.playwright-cli
+output/
