@@ -749,322 +749,304 @@ description: "Flattened HairMatch application specification."
 
 - :ResponsiveUi: should maintain portrait quiz option media with `aspect-ratio: 2 / 3` and should mirror aspect-ratio-sensitive changes in the short-laptop CSS block.
 
+- :ProfileScreen: should render a hero with `Your hair brief` and explanatory copy about gathering current hair photos, reference looks, colour details, and notes.
 
-- :ProfileScreen: should render the `Your hair brief` hero with explanatory copy about gathering current hair photos, reference looks, colour details, and notes.
+- :ProfileScreen: should render a `Your hair` section for :OwnHairItem: records.
 
-- :ProfileScreen: should render the main profile sections: `Your hair`, `References`, `Colour & treatment`, and `Budget & maintenance`.
+- :ProfileScreen: should render a `References` section for :ReferenceItem: records.
 
-- :ProfileScreen: should render a sticky or side summary card with completeness percent, links to missing sections, and a `Complete profile` action.
+- :ProfileScreen: should render a `Colour & treatment` section.
 
-- :ProfileScreen: should persist :BriefItem: records and :BriefDetails: to localStorage so profile data survives reloads.
+- :ProfileScreen: should render a `Budget & maintenance` section.
 
-- :ProfileScreen: should mirror profile edits to :BriefApi: with debounced background sync.
+- :ProfileScreen: should render a sticky or side profile summary card with completeness percent, row links to missing sections, and a `Complete profile` button.
 
-- :ProfileScreen: should keep existing visible edits when API mirroring fails.
+- :BriefItem: should include `id`, `source`, `imageUrl`, `name`, `partition`, `firstChoice`, `annotation`, and optional `styleId`, `referenceStyleId`, or `hairstyleStatus`.
 
+- :OwnHairItem: should always normalize to `partition: "me"` and `hairstyleStatus: "current"`.
 
-- :BriefItem: should use fields `id`, `source`, `imageUrl`, `name`, `partition`, `firstChoice`, `annotation`, optional style ids, and optional `hairstyleStatus`.
+- Items without an explicit `partition: "me"` should be treated as references.
 
-- :OwnHairItem: records should always normalize to `partition: "me"` and `hairstyleStatus: "current"`.
+- Saving a :Favourite: should automatically add a corresponding :SavedReferenceItem: to :StyleBrief:.
 
-- :ReferenceItem: records should include all items without explicit `partition: "me"`.
+- Removing a saved reference from :StyleBrief: should also remove the matching :Favourite: through :FavouritesApi:.
 
-- Reference items should sort favourite references before non-favourite references while preserving order within each group.
+- :SavedReferenceItem: ids should be `saved-<styleId>`.
 
-- Saving a :Favourite: should create a `saved-<styleId>` :SavedReferenceItem with gallery metadata.
+- :SavedReferenceItem: should include source `saved`, gallery `styleId`, image URL, style name, partition `references`, `firstChoice: true`, and empty annotation.
 
-- Removing a saved reference should remove the matching favourite through :FavouritesApi:.
+- :ProfileScreen: should let :User: upload or capture one or more self photos into the `me` partition.
 
-- :ProfileScreen: should let :User: upload or capture multiple self photos.
-
-- :ProfileScreen: should let :User: upload multiple reference photos.
-
-- Self-photo uploads should mirror to :UserPhotoApi: as best-effort background writes.
+- :ProfileScreen: should let :User: upload one or more reference photos into the `references` partition.
 
 - :ProfileScreen: should let :User: remove any brief item.
 
-- Gallery-backed reference cards should open the matching style detail.
+- :ProfileScreen: should let :User: open a gallery style detail from a reference card when that card points to a known gallery style.
 
-- :BriefDetails: should default colour to `None`, budget max to `200`, barber time to `60`, and text fields to empty.
+- Reference items should be sorted with favourite references before non-favourite references while preserving order within each group.
 
-- The colour dropdown should include natural colours, fashion colours, highlights, balayage, ombre, bleach, and Other.
+- :BriefDetails: should default to colour `None`, empty treatment fields, budget max `200`, time at barber `60`, empty maintenance preference, and empty notes.
 
-- Known colour options should show solid swatches.
+- The colour dropdown should include `None`, Jet black, Soft black, Darkest brown, Dark brown, Medium brown, Light brown, Chestnut brown, Ash brown, Dark blonde, Medium blonde, Light blonde, Ash blonde, Platinum blonde, Honey blonde, Strawberry blonde, Auburn, Copper / ginger, Bright red, Burgundy, Mahogany, Rose gold, Pastel pink, Hot pink, Lavender, Purple, Blue, Teal, Green, Silver / grey, Highlights, Balayage, Ombre, Bleached / lightened, and Other.
 
-- The `None` colour option should show a no-colour icon swatch.
+- Selecting `None` for colour should clear allergies, previous treatments, chemical history, and damage fields.
+
+- Known colour options should show a solid hex swatch.
+
+- `None` should show a no-colour icon swatch.
 
 - Unknown typed colour values should show an empty placeholder swatch.
 
-- Selecting `None` for colour should clear allergy, previous-treatment, chemical-history, and damage fields.
+- Treatment detail fields should include allergies or sensitivities, previous colour treatments, other chemical history, and damage or breakage.
 
-- Treatment detail rows should be addable until a value is chosen.
+- Treatment detail fields should render as addable rows until a value is chosen.
 
-- Treatment detail rows should support fixed option lists plus `Other` free text input.
+- Each treatment detail row should support a fixed option list plus `Other` with a free text input.
 
-- Budget should range from `0` to `200` in steps of `10` and display `GBP0-GBP<amount>` with a plus suffix at 200.
+- Budget should be a range from `0` to `200` in steps of `10` and display `GBP0-GBP<amount>` with a plus suffix at 200.
 
-- Time at barber should range from `15` to `180` minutes in steps of `15`.
+- Time at barber should be a range from `15` to `180` minutes in steps of `15`.
 
-- Maintenance preference should be a Low, Medium, High segmented control.
+- Maintenance preference should be a Low, Medium, High segmented control and should fall back to the quiz maintenance answer when explicit profile preference is empty.
 
-- Maintenance preference should fall back to the quiz maintenance answer when no explicit profile preference exists.
+- General notes should be a multiline text field in the budget and maintenance section.
 
-- General notes should be a multiline field in the budget and maintenance section.
+- Profile completeness should count four sections: own hair photo, references, colour/treatment details, and budget/maintenance details.
 
-- Profile completion should count four sections: own hair photo, references, colour/treatment details, and budget/maintenance details.
+- `Complete profile` should highlight missing own hair, references, colour/treatment, or budget/maintenance sections before opening the completion page.
 
-- `Complete profile` should highlight missing sections before opening the completion page.
+- The completion page should let :User: edit final notes, copy the brief link, or share the brief with the stylist.
 
-- The completion page should let :User: edit final notes.
+- Completing with share should remember the current brief id, start a new draft id, show a `Brief sent!` screen, and navigate back home when dismissed.
 
-- The completion page should let :User: copy a brief link.
+- :BriefShareFlow: should create links shaped `/?brief=<briefId>&review=1` for stylist review.
 
-- The completion page should let :User: share the brief with the stylist.
+- :BriefShareFlow: should force a brief sync before reporting a link as ready.
 
-- :BriefShareFlow: should create links shaped `/?brief=<briefId>&review=1`.
+- Brief sync should debounce regular edits by about `800ms` when a brief id already exists and about `160ms` before the first id exists.
 
-- Sharing should force a brief sync before reporting a link as ready.
+- Brief sync should queue another sync if a save is already in flight.
 
-- Sharing should remember the completed brief id.
+- Brief payloads should include `id` when known, `sessionId`, `items`, and a filtered `details` payload.
 
-- Sharing should start a new draft id after completion.
+- :BriefDetails: payload should include colour treatment fields only when the colour section is open and has content.
 
-- Sharing should show `Brief sent!` and navigate home when dismissed.
+- :BriefDetails: payload should include notes, budget, time, and maintenance preference when present even if the colour section is closed.
 
-- Brief sync should debounce regular edits by about `800ms` when a brief id exists.
+- :SharedReviewScreen: should load `GET /api/briefs/:id` and render a loading state, not-found state, or the loaded brief.
 
-- Brief sync should debounce by about `160ms` before the first brief id exists.
+- :SharedReviewScreen: should render a stylist reviewer name input when opened in review mode.
 
-- Brief sync should queue another save if one is already in flight.
+- :SharedReviewScreen: should render read-only `Their hair` and `References` partitions.
 
-- Brief sync payloads should include known `id`, `sessionId`, `items`, and filtered `details`.
+- :SharedReviewScreen: should render colour/treatment details only when the owner shared those fields.
 
-- :BriefDetails: payload should include colour/treatment fields only when that section is open and has content.
+- :SharedReviewScreen: should render general notes as a distinct section.
 
-- :BriefDetails: payload should include notes, budget, time, and maintenance when present even if the colour section is closed.
+- :SharedReviewScreen: should render a high-level stylist summary form in review mode.
 
-- Completed brief ids should stay in localStorage so old share links remain visible in messages after a new draft starts.
+- Submitting a stylist summary should `POST /api/briefs/:id/feedback` with author and note, append returned feedback locally, and re-render.
 
-- :SharedReviewScreen: should load `GET /api/briefs/:id`.
+- :SharedReviewScreen: should let the reviewer edit and delete their existing feedback entries.
 
-- :SharedReviewScreen: should render loading, not-found, review, and client-read-only states.
-
-- :SharedReviewScreen: should render a stylist reviewer name input in review mode.
-
-- :SharedReviewScreen: should show read-only `Their hair` and `References` sections.
-
-- :SharedReviewScreen: should show colour/treatment details only when shared.
-
-- :SharedReviewScreen: should show general notes as a distinct section.
-
-- :SharedReviewScreen: should submit the high-level stylist summary to `POST /api/briefs/:id/feedback` with author and note.
-
-- :SharedReviewScreen: should append returned feedback locally.
-
-- :SharedReviewScreen: should allow the reviewer to edit and delete their existing feedback entries.
+- Shared client view from Messages should open with `?brief=<id>&client=1`, should be read-only, and should include a Leave brief button returning to Messages.
 
 - :MessagesScreen: should render `Stylist feedback` with explanatory copy.
 
-- :MessagesScreen: should show an empty state and `Complete profile` button when no brief has been shared.
+- :MessagesScreen: should show an empty state and a `Complete profile` button when no brief has been shared.
 
-- :MessagesScreen: should show newest-first feedback cards when feedback exists.
+- :MessagesScreen: should list feedback sorted newest first when feedback exists.
 
-- Message cards should show stylist avatar or initials, display name, date, note, and a `View style brief` link.
+- Each message card should show stylist avatar or initials, stylist display name, date, feedback note, and a `View style brief` link.
 
-- The client shared-brief view should open as `?brief=<id>&client=1`.
+- :MessagesScreen: should support pull-to-refresh on touch devices when a brief exists.
 
-- The client shared-brief view should be read-only and include a Leave brief button returning to Messages.
+- Pull-to-refresh should show `Pull down to refresh`, `Release to refresh`, and `Refreshing...` states and should call `loadOwnerFeedback()`.
 
-- Touch devices should support pull-to-refresh in :MessagesScreen:.
+- :TryOnOverlay: should open from the detail popup's `Try on` button for the currently selected style.
 
-- Pull-to-refresh should show `Pull down to refresh`, `Release to refresh`, and `Refreshing...` states.
+- :TryOnOverlay: should prefill :TryOnSelfie: from the latest :OwnHairItem: in the profile when one exists.
 
-- Pull-to-refresh should call `loadOwnerFeedback()` when released.
+- :TryOnOverlay: should show usage text while loading usage, then show remaining and total try-ons when usage is known.
 
-- :TryOnOverlay: should open from :DetailOverlay: for the selected style.
-
-- :TryOnOverlay: should prefill :TryOnSelfie: from the latest profile own-hair item when available.
-
-- :TryOnOverlay: should load and display usage text with remaining and total try-ons.
-
-- :TryOnOverlay: should show side-by-side reference haircut and selfie frames.
+- :TryOnOverlay: should show side-by-side frames for reference haircut and user selfie before generation.
 
 - :TryOnOverlay: should let :User: upload a different selfie.
 
-- :TryOnOverlay: should ask whether to use an uploaded selfie in Profile.
+- Uploading a selfie in :TryOnOverlay: should ask whether to use this selfie in Profile too.
 
-- Accepting the profile selfie prompt should update or create an :OwnHairItem: and mirror it to :UserPhotoApi:.
+- Answering yes to the profile update prompt should update the existing source :OwnHairItem: when possible, otherwise create a new :OwnHairItem:, and mirror the image to :UserPhotoApi:.
 
-- Declining the profile selfie prompt should keep the selfie temporary for the current try-on.
+- Answering no to the profile update prompt should keep the selfie only for the current try-on.
 
-- The Apply haircut button should be disabled when required try-on inputs are missing or generation cannot run.
+- The Apply haircut button should be disabled when no selfie exists, no reference image exists, generation is in progress, profile-update prompt is open, or remaining usage is zero.
 
-- Applying a try-on should set status `generating`, clear previous result and error, and render generation feedback.
+- Applying a try-on should set status to `generating`, clear previous result and error, render a generation frame, and call `POST /api/try-on`.
 
-- Applying a try-on should call `POST /api/try-on` with `sessionId`, `styleId`, `styleName`, `userImageData`, and `referenceImageUrl` through :FrontendApiClient:.
+- :TryOnOverlay: should pass `sessionId`, `styleId`, `styleName`, `userImageData`, and `referenceImageUrl` to :TryOnApi:.
 
-- :TryOnOverlay: should never expose `OPENAI_API_KEY` in browser code.
+- While generating, :TryOnOverlay: should show animated visual feedback and copy `Generating your try-on`.
 
-- During generation, :TryOnOverlay: should show copy `Generating your try-on`.
+- When generation succeeds, :TryOnOverlay: should render :GeneratedTryOnImage: with caption `Your realistic try-on`.
 
-- On success, :TryOnOverlay: should render :GeneratedTryOnImage: with caption `Your realistic try-on`.
+- When generation succeeds, :TryOnOverlay: should update local usage limit, used count, and remaining count from the API response.
 
-- On success, :TryOnOverlay: should update local usage limit, used, and remaining from the API response.
+- When generation fails, :TryOnOverlay: should show the API error message and should update usage fields from the error payload when present.
 
-- On failure, :TryOnOverlay: should show the API error message.
+- :TryOnOverlay: should let :User: download :GeneratedTryOnImage: as `hairmatch-try-on-<style-name>.png`.
 
-- On failure, :TryOnOverlay: should update usage fields from the error payload when present.
+- :TryOnOverlay: should let :User: save :GeneratedTryOnImage: to favourites.
 
-- :TryOnOverlay: should download output as `hairmatch-try-on-<style-name>.png`.
+- Saving a generated try-on result should create a :TryOnReferenceItem: in the references partition with source `try-on`, `referenceStyleId`, generated `imageUrl`, name `Try-on: <style name>`, and annotation `Generated try-on based on <style name>.`
 
-- :TryOnOverlay: should save generated output to favourites.
+- Saving a generated try-on result should also favourite the source :GalleryStyle: when not already favourited.
 
-- Saving generated output should create a :TryOnReferenceItem: in the references partition.
+- :TryOnApi: should count only successful generations by inserting :TryOnGenerationsTable: rows after OpenAI succeeds.
 
-- The :TryOnReferenceItem: should include source `try-on`, reference style id, generated image URL, name `Try-on: <style name>`, and annotation `Generated try-on based on <style name>.`.
+- :TryOnApi: should return 429 before OpenAI is called when the per-session generation limit has been reached.
 
-- Saving generated output should favourite the source :GalleryStyle: when needed.
+- :FullGalleryAnalysisScript: should select gallery rows with non-empty `image_url` and missing `classified_at`, `ethnicity`, or `celebrity` unless `--force` is used.
 
-- :TryOnApi: should insert :TryOnGenerationsTable: rows only after OpenAI succeeds.
+- :FullGalleryAnalysisScript: should send one `input_text` prompt and one `input_image` URL to :OpenAiResponsesApi: for each selected row.
 
-- :TryOnApi: should use default and configured generation limits consistently.
+- :FullGalleryAnalysisScript: should request strict JSON schema output named `haircut_image_analysis`.
 
-- :TryOnApi: should return HTTP `429` before calling OpenAI when the per-session limit is reached.
+- :FullGalleryAnalysisScript: schema should require `hair_type`, `hair_subtype`, `length`, `face_shape`, `gender`, `ethnicity`, `celebrity`, `upkeep`, `haircut_name`, `hair_colour`, `vibe`, and `maintenance`.
 
-- :FullGalleryAnalysisScript: should select rows with non-empty `image_url` and missing `classified_at`, `ethnicity`, or `celebrity` unless `--force` is used.
+- :FullGalleryAnalysisScript: should restrict `hair_type` to `straight`, `wavy`, `curly`, or `coily`.
 
-- :FullGalleryAnalysisScript: should call :OpenAiResponsesApi: with one `input_text` prompt and one `input_image` URL.
+- :FullGalleryAnalysisScript: should restrict `hair_subtype` to `1A`, `1B`, `1C`, `2A`, `2B`, `2C`, `3A`, `3B`, `3C`, `4A`, `4B`, or `4C`.
 
-- :FullGalleryAnalysisScript: should request strict JSON schema `haircut_image_analysis`.
+- :FullGalleryAnalysisScript: should restrict `length` to `very short`, `short`, `medium`, `long`, or `very long`.
 
-- :FullGalleryAnalysisScript: should require and validate hair type, subtype, length, face shape, gender, ethnicity, celebrity, upkeep, haircut name, hair colour, vibe, and maintenance.
+- :FullGalleryAnalysisScript: should restrict `face_shape` to `oval`, `round`, `square`, `heart`, `diamond`, `rectangle`, or `triangle`.
 
-- :FullGalleryAnalysisScript: should normalize celebrity unknown/no values to exactly `none`.
+- :FullGalleryAnalysisScript: should restrict `gender` to `male` or `female` and should write UI gender as `Men` or `Women`.
 
-- :FullGalleryAnalysisScript: should write final :AiAnalysisColumns:, `classified_at = CURRENT_TIMESTAMP`, UI gender, and merged case-insensitive labels back to :GalleryImagesTable:.
+- :FullGalleryAnalysisScript: should restrict `ethnicity` to `black`, `south east asian`, `asian`, `south-asian`, `latino`, `middle-eastern`, or `white`.
 
-- :CelebrityAnalysisScript: should select only rows whose celebrity is `none`.
+- :FullGalleryAnalysisScript: should normalize celebrity values like unknown, no, and not a celebrity to exactly `none`.
 
-- :CelebrityAnalysisScript: should request strict schema `gallery_celebrity_analysis`.
+- :FullGalleryAnalysisScript: should write hair type, subtype, length, face shape, ethnicity, celebrity, upkeep, haircut name, hair colour, vibe, maintenance, analysis model, `classified_at = CURRENT_TIMESTAMP`, gender, and merged labels back to :GalleryImagesTable:.
 
-- :CelebrityAnalysisScript: should write celebrity plus merged labels without changing hairstyle attributes.
+- :FullGalleryAnalysisScript: should merge existing labels, existing features, and analysis values into `labels_json` with case-insensitive deduplication.
 
-- :HairAttributesAnalysisScript: should select rows missing hair thickness or hair colour unless `--force` is used.
+- :CelebrityAnalysisScript: should select only rows whose `celebrity` is currently `none`.
 
-- :HairAttributesAnalysisScript: should request strict schema `gallery_hair_attributes_analysis`.
+- :CelebrityAnalysisScript: should request strict JSON schema output named `gallery_celebrity_analysis` with required `celebrity`.
 
-- :HairAttributesAnalysisScript: should restrict hair thickness to especially thin, thin, thick, or especially thick.
+- :CelebrityAnalysisScript: should write `celebrity` and merged `labels_json` without changing hair type or other hairstyle attributes.
 
-- :HairAttributesAnalysisScript: should restrict hair colour to black, brown, blonde, red, grey, or other.
+- :HairAttributesAnalysisScript: should select rows with missing `hair_thickness` or `hair_colour` unless `--force` is used.
 
-- :HairAttributesAnalysisScript: should write hair thickness, hair colour, analysis model, and merged labels.
+- :HairAttributesAnalysisScript: should request strict JSON schema output named `gallery_hair_attributes_analysis`.
 
-- :GalleryAnalysisScript: files should use Node.js ES modules and load `.env` without overriding exported variables.
+- :HairAttributesAnalysisScript: should restrict `hair_thickness` to `especially thin`, `thin`, `thick`, or `especially thick`.
 
-- :GalleryAnalysisScript: files should use `OPENAI_API_KEY` and optional `OPENAI_MODEL` defaulting to `gpt-5-mini-2025-08-07`.
+- :HairAttributesAnalysisScript: should restrict `hair_colour` to `black`, `brown`, `blonde`, `red`, `grey`, or `other`.
 
-- :GalleryAnalysisScript: files should call Wrangler through `npx wrangler d1 execute DB --local|--remote --json --command <sql>`.
+- :HairAttributesAnalysisScript: should write `hair_thickness`, `hair_colour`, `analysis_model`, and merged `labels_json`.
 
-- :GalleryAnalysisScript: files should support `--local`, `--remote`, `--dry-run`, `--force`, `--limit`, `--delay-ms`, `--concurrency`, `--retries`, and `--database` or `--binding`.
+- :GalleryAnalysisScript: files should support worker-style concurrency with a shared next-index counter and `Promise.all(workers)`.
 
-- :GalleryAnalysisScript: files should run worker-style concurrency with a shared next-index counter and `Promise.all(workers)`.
+- :GalleryAnalysisScript: files should retry OpenAI and D1 update failures with exponential backoff.
 
-- :GalleryAnalysisScript: files should retry OpenAI and D1 failures with exponential backoff.
+- :GalleryAnalysisScript: files should print each failed row and set non-zero process exit code when failures remain.
 
-- :GalleryAnalysisScript: files should print each failed row and exit non-zero when failures remain.
+- `npm start` should run `npx wrangler dev`.
 
-- :PackageScripts: should make `npm start` run `npx wrangler dev`.
+- `npm run dev:local` should run `node local-dev.mjs`.
 
-- :PackageScripts: should make `npm run dev:local` run `node local-dev.mjs`.
+- `npm test` should run `node --test`.
 
-- :PackageScripts: should make `npm test` run `node --test`.
+- `npm run db:migrate:local` should run `npx wrangler d1 migrations apply DB --local`.
 
-- :PackageScripts: should include D1 migration and list scripts using Wrangler binding `DB`.
+- `npm run db:migrate:remote` should run `npx wrangler d1 migrations apply DB --remote`.
 
-- :PackageScripts: should make deploy apply remote D1 migrations before `npx wrangler deploy`.
+- `npm run db:list` should run `npx wrangler d1 list`.
 
-- :PackageScripts: should include gallery analysis scripts with `--local` and `--remote` variants.
+- `npm run deploy` should run remote D1 migrations and then `npx wrangler deploy`.
 
-- :WranglerConfig: should name the Worker `hairmatch` and use a `YYYY-MM-DD` compatibility date.
+- Gallery analysis package scripts should invoke the corresponding Node script with `--local` or `--remote`.
 
-- :WranglerConfig: should bind assets and D1 correctly with the configured database id.
+- :WranglerConfig: should name the Worker `hairmatch`.
 
-- :GithubActionsWorkflow: should run test and deploy jobs with Node.js 22 and npm cache.
+- :WranglerConfig: should set `compatibility_date` to a `YYYY-MM-DD` value.
 
-- :GithubActionsWorkflow: should apply remote D1 migrations before deploying.
+- :WranglerConfig: should include the existing D1 `database_name = "hairmatch"` and configured `database_id`.
 
-- :GithubActionsWorkflow: deploy should use deploy concurrency and Cloudflare secrets.
+- :GithubActionsWorkflow: should define a `test` job that checks out code, sets up Node.js 22, installs dependencies with `npm ci`, and runs `npm test`.
 
-- :LocalDevServer: should use only built-in Node modules.
+- :GithubActionsWorkflow: should define a `deploy` job that needs `test`, runs only on push events, uses a deploy concurrency group scoped to the current GitHub ref, applies remote D1 migrations, and deploys the Worker.
+
+- :GithubActionsWorkflow: deploy steps should receive the Cloudflare API token and Cloudflare account id from repository secrets.
 
 - :LocalDevServer: should listen on `process.env.PORT` or `8787`.
 
 - :LocalDevServer: should expose `/api/status` with storage `memory+persistent-briefs`.
 
-- :LocalDevServer: should parse JSON safely and return `null` on malformed bodies.
+- :LocalDevServer: should parse JSON request bodies safely and return `null` on malformed JSON.
 
 - :LocalDevServer: should infer MIME types for HTML, JavaScript, JSX, CSS, JSON, SVG, PNG, JPG, JPEG, and WEBP.
 
-- :LocalDevServer: should reject static path traversal.
+- :LocalDevServer: should reject static asset path traversal.
 
 - :LocalDevServer: should serve `/`, `/admin`, and `/admin/` from `frontend/index.html`.
 
-- :LocalDevServer: should serve API routes close enough to :Backend: for local development.
+- :LocalDevServer: should serve API routes with behavior matching :Backend: closely enough for local development.
 
-- :LocalDevServer: should use memory storage for gallery rows, quiz responses, user photos, favourites, and try-on counters.
+- :LocalDevServer: should seed its memory gallery by reading SQL migration files, finding `INSERT OR IGNORE INTO gallery_images (...) VALUES ...;` blocks, parsing string tuples, and mapping rows to frontend gallery objects.
 
-- :LocalDevServer: should persist only briefs and feedback to :LocalPersistentStore:.
+- :LocalDevServer: should infer seed gender as `Men` for GQ or mens-hair-trends rows, `Women` for Glamour or womens-hair-trends rows, and `Unisex` otherwise.
 
-- :LocalDevServer: should read SQL migration files to seed gallery memory rows.
+- :LocalDevServer: should implement the same try-on prompt, OpenAI image edits form fields, generation limit, and response shape as :Backend:.
 
-- :LocalDevServer: should parse `INSERT OR IGNORE INTO gallery_images (...) VALUES ...;` blocks.
-
-- :LocalDevServer: should map seeded rows to frontend gallery objects.
-
-- :LocalDevServer: should infer seed gender from GQ, Glamour, mens-hair-trends, and womens-hair-trends metadata.
-
-- :LocalDevServer: should emulate the backend try-on prompt, OpenAI form fields, generation limit, and response shape.
+- :LocalDevServer: should persist only `briefs` and `briefFeedback` arrays to :LocalPersistentStore:.
 
 - :MockD1: should support table arrays for gallery images, quiz responses, user photos, favourite images, try-on generations, style briefs, and brief feedback.
 
-- :MockD1: should implement `prepare().bind().run()`, `first()`, and `all()` for SQL used by :Backend:.
+- :MockD1: should implement `prepare().bind().run()`, `first()`, and `all()` for the SQL patterns used by :Backend:.
 
-- :ConformanceTests: should import :Backend: by reading `server.ts`, stripping simple TypeScript annotations, and importing generated JavaScript as a data URL.
+- :ConformanceTests: should verify frontend root serving.
 
-- :ConformanceTests: should load frontend source through JavaScript and CSS manifests.
+- :ConformanceTests: should verify admin route frontend serving.
 
-- :ConformanceTests: should avoid real Cloudflare D1, real OpenAI keys, SQLite, and external network calls.
+- :ConformanceTests: should verify backend status JSON.
 
-- :ConformanceTests: should verify frontend root and admin route serving.
+- :ConformanceTests: should verify gallery create and list.
 
-- :ConformanceTests: should verify status JSON.
+- :ConformanceTests: should verify gallery attribute update.
 
-- :ConformanceTests: should verify gallery create, list, label update, attribute update, and delete-with-favourite-cascade.
+- :ConformanceTests: should verify gallery label update.
 
-- :ConformanceTests: should verify quiz response and user photo create/list behavior.
+- :ConformanceTests: should verify gallery delete cascades to favourites.
 
-- :ConformanceTests: should verify favourite create/list/delete behavior.
+- :ConformanceTests: should verify quiz response and user photo creation/listing.
 
-- :ConformanceTests: should verify shareable brief create, update, list, and readback behavior.
+- :ConformanceTests: should verify try-on API key requirement.
 
-- :ConformanceTests: should verify multiple briefs per session.
+- :ConformanceTests: should verify try-on usage limit reporting.
 
-- :ConformanceTests: should verify reviewer feedback create, edit, delete, empty rejection, and missing brief 404 behavior.
+- :ConformanceTests: should verify try-on per-session generation limit.
 
-- :ConformanceTests: should verify unknown API routes return JSON 404.
+- :ConformanceTests: should verify favourite creation, listing, and deletion.
 
-- :ConformanceTests: should verify try-on missing API key, usage reporting, configured/default usage limits, and exactly five mocked default-limit successes per session.
+- :ConformanceTests: should verify shareable brief creation, update, listing, readback, and reviewer feedback.
 
-- :ConformanceTests: should verify :IndexHtml: includes `#results-grid`, `/app.js`, `/styles.css`, `#detail-try-on`, and `#try-on-overlay`.
+- :ConformanceTests: should verify reviewer feedback edit and delete.
 
-- :ConformanceTests: should verify concatenated frontend source contains required API constants, result computation, filtering helpers, try-on hooks, and no admin edit controls.
+- :ConformanceTests: should verify empty feedback rejection and missing brief errors.
 
-- :ConformanceTests: should verify CSS contains home wordmark sizing and try-on generation animation and no admin styles.
+- :ConformanceTests: should verify unknown static routes return `404 Not found`.
 
-- :ConformanceTests: should verify :WranglerConfig: is correct.
+- :ConformanceTests: should verify static frontend source wiring to image and database APIs.
 
-- :ConformanceTests: should verify :GithubActionsWorkflow: applies remote D1 migrations before deploy.
+- :ConformanceTests: should verify Wrangler config.
 
-- :ConformanceTests: should verify :GalleryAnalysisScript: source uses OpenAI Responses API image inputs, structured schemas, retries, concurrency, and D1 updates.
+- :ConformanceTests: should verify GitHub Actions deploy ordering.
 
-- :ConformanceTests: should verify :LocalDevServer: seeds gallery memory from SQL and persists shared briefs.
+- :ConformanceTests: should verify gallery image AI analysis script wiring.
+
+- :ConformanceTests: should verify local dev gallery seeding and brief persistence.
+
+- :FullHairMatchApp: should implement the complete HairMatch product: static frontend, Cloudflare Worker backend, D1 database schema and migrations, OpenAI GPT Image 2 try-on backend, gallery analysis scripts, local fallback server, package scripts, tests, and CI/CD.
