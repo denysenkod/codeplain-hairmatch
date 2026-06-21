@@ -1,0 +1,4 @@
+[submodule "generated/hairmatch-expanded"]
+	path = generated/hairmatch-expanded
+	url = https://github.com/denysenkod/codeplain-hairmatch.git
+	branch = generated-hairmatch-expanded
